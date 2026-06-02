@@ -1,0 +1,15 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NodeChaos
+metadata:
+  name: node-kill
+  namespace: fission
+spec:
+  action: kill
+  mode: one
+  selector:
+    nodes:
+      - <node-name> # Replace with the actual node name hosting the function
+  duration: "10s"
+  scheduler:
+    cron: "0 5 * * *" # At 5 minutes past the hour
+

@@ -1,0 +1,62 @@
+{
+  "cpu_usage_data": {
+    "NoFailures": {
+      "Vanilla": 1412.111886540537,
+      "AS": 3151.7804616431067,
+      "RR": 3749.937061110097,
+      "CP": 2789.5599488872867
+    },
+    "PodFailures": {
+      "Vanilla": 1527.1356508912256,
+      "AS": 3373.9077580212597,
+      "RR": 3876.5961550876527,
+      "CP": 3806.5362430519644
+    },
+    "NodeFailures": {
+      "Vanilla": 1628.8694320224583,
+      "AS": 3803.428896547212,
+      "RR": 3996.8167753546736,
+      "CP": 3992.8848556324274
+    }
+  },
+  "techniques": {
+    "Vanilla": {
+      "color": "#90EE90",
+      "label": "Vanilla"
+    },
+    "AS": {
+      "color": "#FFD700",
+      "label": "AS"
+    },
+    "RR": {
+      "color": "#FF69B4",
+      "label": "RR"
+    },
+    "CP": {
+      "color": "#8A2BE2",
+      "label": "CP"
+    }
+  },
+  "scenarios": [
+    "NoFailures",
+    "PodFailures",
+    "NodeFailures"
+  ],
+  "benchmark_config": {
+    "total_requests": 60000,
+    "duration": 600,
+    "concurrent_users": 100,
+    "input_rate": 100
+  },
+  "metadata": {
+    "generated_at": "2025-11-10T06:28:53.626649",
+    "scenario": "total_cpu_usage_with_cp",
+    "chart_type": "cpu_usage_bar_chart",
+    "techniques": [
+      "Vanilla",
+      "AS",
+      "RR",
+      "CP"
+    ]
+  }
+}

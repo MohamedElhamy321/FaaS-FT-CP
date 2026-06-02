@@ -1,0 +1,12 @@
+apiVersion: fission.io/v1
+kind: HTTPTrigger
+metadata:
+  name: fibonacci-trigger
+  namespace: default
+spec:
+  methods:
+  - POST
+  urlPattern: /fibonacci
+  function:
+    name: fibonacci-func
+    namespace: default

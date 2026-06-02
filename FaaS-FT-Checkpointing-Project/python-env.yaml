@@ -1,0 +1,10 @@
+apiVersion: fission.io/v1
+kind: Environment
+metadata:
+  name: python
+  namespace: default
+spec:
+  version: 3
+  runtime:
+    image: fission/python-env:latest
+  builder: {}

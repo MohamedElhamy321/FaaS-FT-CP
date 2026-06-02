@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: router-rr
+spec:
+  type: ClusterIP
+  selector:
+    app: router-rr
+  ports:
+    - port: 80
+      targetPort: 8082
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: router-rr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: router-rr
+  template:
+    metadata:
+      labels:
+        app: router-rr
+    spec:
+      containers:
+      - name: router
+        image: router-rr:1.0
+        imagePullPolicy: Never
+        env:
+        - name: BACKEND_SERVERS
+          value: "fibonacci-backend.default.svc.cluster.local:80"
+        ports:
+        - containerPort: 8082

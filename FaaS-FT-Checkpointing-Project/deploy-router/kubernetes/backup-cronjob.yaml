@@ -1,0 +1,120 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: checkpoint-backup
+  namespace: checkpoint-system
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: checkpoint-backup-sa
+          containers:
+          - name: backup
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/bash
+            - -c
+            - |
+              #!/bin/bash
+              set -e
+              
+              BACKUP_DIR="/backup/$(date +%Y%m%d-%H%M%S)"
+              mkdir -p "$BACKUP_DIR"
+              
+              echo "Starting backup at $(date)"
+              
+              # Backup ConfigMap
+              kubectl get configmap checkpoint-config -n checkpoint-system -o yaml > "$BACKUP_DIR/configmap.yaml"
+              
+              # Backup Deployment
+              kubectl get deployment checkpoint-manager -n checkpoint-system -o yaml > "$BACKUP_DIR/deployment.yaml"
+              
+              # Backup Services
+              kubectl get svc -n checkpoint-system -o yaml > "$BACKUP_DIR/services.yaml"
+              
+              # Backup HPA
+              kubectl get hpa -n checkpoint-system -o yaml > "$BACKUP_DIR/hpa.yaml"
+              
+              # Get checkpoint data from pod
+              POD=$(kubectl get pods -n checkpoint-system -l app=incremental-checkpoint -o jsonpath='{.items[0].metadata.name}')
+              if [ ! -z "$POD" ]; then
+                kubectl exec -n checkpoint-system $POD -- tar czf /tmp/checkpoints-backup.tar.gz -C /data checkpoints 2>/dev/null || true
+                kubectl cp checkpoint-system/$POD:/tmp/checkpoints-backup.tar.gz "$BACKUP_DIR/checkpoints-data.tar.gz"
+                kubectl exec -n checkpoint-system $POD -- rm /tmp/checkpoints-backup.tar.gz 2>/dev/null || true
+              fi
+              
+              # Create manifest
+              cat > "$BACKUP_DIR/manifest.json" <<EOF
+              {
+                "timestamp": "$(date -Iseconds)",
+                "namespace": "checkpoint-system",
+                "files": ["configmap.yaml", "deployment.yaml", "services.yaml", "hpa.yaml", "checkpoints-data.tar.gz"]
+              }
+              EOF
+              
+              echo "Backup completed at $(date)"
+              echo "Backup location: $BACKUP_DIR"
+              
+              # Cleanup old backups (keep last 7 days)
+              find /backup -type d -mtime +7 -exec rm -rf {} + 2>/dev/null || true
+              
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backup
+          restartPolicy: OnFailure
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-pvc
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: checkpoint-backup-sa
+  namespace: checkpoint-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: checkpoint-backup-role
+  namespace: checkpoint-system
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "pods/exec", "configmaps", "services"]
+  verbs: ["get", "list"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: checkpoint-backup-rolebinding
+  namespace: checkpoint-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: checkpoint-backup-role
+subjects:
+- kind: ServiceAccount
+  name: checkpoint-backup-sa
+  namespace: checkpoint-system
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backup-pvc
+  namespace: checkpoint-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

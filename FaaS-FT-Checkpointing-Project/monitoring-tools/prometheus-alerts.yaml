@@ -1,0 +1,202 @@
+groups:
+  - name: checkpoint_alerts
+    interval: 30s
+    rules:
+      # Performance Alerts
+      - alert: SlowCheckpointCreation
+        expr: histogram_quantile(0.95, rate(checkpoint_creation_duration_seconds_bucket[5m])) > 0.010
+        for: 5m
+        labels:
+          severity: warning
+          component: checkpoint
+        annotations:
+          summary: "Checkpoint creation is slow"
+          description: "P95 checkpoint creation latency is {{ $value | humanizeDuration }} (threshold: 10ms)"
+          
+      - alert: VerySlowCheckpointCreation
+        expr: histogram_quantile(0.95, rate(checkpoint_creation_duration_seconds_bucket[5m])) > 0.100
+        for: 2m
+        labels:
+          severity: critical
+          component: checkpoint
+        annotations:
+          summary: "Checkpoint creation is very slow"
+          description: "P95 checkpoint creation latency is {{ $value | humanizeDuration }} (threshold: 100ms)"
+          
+      - alert: SlowCheckpointRestoration
+        expr: histogram_quantile(0.95, rate(checkpoint_restoration_duration_seconds_bucket[5m])) > 0.020
+        for: 5m
+        labels:
+          severity: warning
+          component: checkpoint
+        annotations:
+          summary: "Checkpoint restoration is slow"
+          description: "P95 restoration latency is {{ $value | humanizeDuration }} (threshold: 20ms)"
+          
+      # Error Alerts
+      - alert: HighCheckpointErrorRate
+        expr: rate(checkpoint_errors_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: checkpoint
+        annotations:
+          summary: "High checkpoint error rate"
+          description: "Error rate is {{ $value | humanize }} errors/sec (threshold: 0.05/sec)"
+          
+      - alert: CheckpointCreationFailures
+        expr: rate(checkpoint_creation_total{status="failure"}[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          component: checkpoint
+        annotations:
+          summary: "Checkpoint creation failures detected"
+          description: "{{ $value | humanize }} failures/sec for checkpoint type {{ $labels.checkpoint_type }}"
+          
+      - alert: CheckpointRestorationFailures
+        expr: rate(checkpoint_restoration_total{status="failure"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          component: checkpoint
+        annotations:
+          summary: "Checkpoint restoration failures detected"
+          description: "{{ $value | humanize }} restoration failures/sec"
+          
+      # Storage Alerts
+      - alert: HighStorageUsage
+        expr: checkpoint_storage_used_bytes > 45000000000  # 45GB
+        for: 10m
+        labels:
+          severity: warning
+          component: checkpoint
+        annotations:
+          summary: "High checkpoint storage usage"
+          description: "Storage usage is {{ $value | humanize1024 }}B (threshold: 45GB of 50GB)"
+          
+      - alert: CriticalStorageUsage
+        expr: checkpoint_storage_used_bytes > 48000000000  # 48GB
+        for: 5m
+        labels:
+          severity: critical
+          component: checkpoint
+        annotations:
+          summary: "Critical checkpoint storage usage"
+          description: "Storage usage is {{ $value | humanize1024 }}B (threshold: 48GB of 50GB)"
+          
+      - alert: TooManyCheckpoints
+        expr: sum(checkpoint_count) > 150
+        for: 10m
+        labels:
+          severity: warning
+          component: checkpoint
+        annotations:
+          summary: "Too many checkpoints stored"
+          description: "{{ $value }} checkpoints stored (threshold: 150)"
+          
+      # Health Alerts
+      - alert: CheckpointSystemUnhealthy
+        expr: checkpoint_health_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: checkpoint
+        annotations:
+          summary: "Checkpoint system is unhealthy"
+          description: "Health check failed for checkpoint system"
+          
+      - alert: NoRecentCheckpoints
+        expr: time() - checkpoint_last_created_timestamp_seconds > 300
+        for: 5m
+        labels:
+          severity: warning
+          component: checkpoint
+        annotations:
+          summary: "No recent checkpoints created"
+          description: "Last checkpoint was created {{ $value | humanizeDuration }} ago"
+          
+      # Cache Performance Alerts
+      - alert: LowCacheHitRate
+        expr: rate(checkpoint_cache_hits_total[5m]) / (rate(checkpoint_cache_hits_total[5m]) + rate(checkpoint_cache_misses_total[5m])) < 0.80
+        for: 10m
+        labels:
+          severity: warning
+          component: checkpoint
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 80%)"
+          
+      - alert: VeryLowCacheHitRate
+        expr: rate(checkpoint_cache_hits_total[5m]) / (rate(checkpoint_cache_hits_total[5m]) + rate(checkpoint_cache_misses_total[5m])) < 0.50
+        for: 5m
+        labels:
+          severity: critical
+          component: checkpoint
+        annotations:
+          summary: "Very low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 50%)"
+          
+      # Compression Alerts
+      - alert: LowCompressionRatio
+        expr: histogram_quantile(0.50, rate(checkpoint_compression_ratio_bucket[10m])) < 2.0
+        for: 15m
+        labels:
+          severity: warning
+          component: checkpoint
+        annotations:
+          summary: "Low compression ratio"
+          description: "Median compression ratio is {{ $value }}x (expected: >3x)"
+          
+      # Throughput Alerts
+      - alert: LowCheckpointThroughput
+        expr: rate(checkpoint_creation_total{status="success"}[5m]) < 10
+        for: 10m
+        labels:
+          severity: warning
+          component: checkpoint
+        annotations:
+          summary: "Low checkpoint throughput"
+          description: "Only {{ $value | humanize }} checkpoints/sec (expected: >10/sec)"
+          
+      # Resource Alerts
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes{pod=~"checkpoint-manager.*"} / container_spec_memory_limit_bytes{pod=~"checkpoint-manager.*"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          component: checkpoint
+        annotations:
+          summary: "High memory usage in checkpoint pod"
+          description: "Memory usage is {{ $value | humanizePercentage }} in pod {{ $labels.pod }}"
+          
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{pod=~"checkpoint-manager.*"}[5m]) / container_spec_cpu_quota{pod=~"checkpoint-manager.*"} * 100000 > 0.80
+        for: 10m
+        labels:
+          severity: warning
+          component: checkpoint
+        annotations:
+          summary: "High CPU usage in checkpoint pod"
+          description: "CPU usage is {{ $value | humanizePercentage }} in pod {{ $labels.pod }}"
+          
+      # Pod Availability Alerts
+      - alert: CheckpointPodDown
+        expr: up{job="checkpoint-manager"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: checkpoint
+        annotations:
+          summary: "Checkpoint pod is down"
+          description: "Checkpoint manager pod {{ $labels.pod }} is not responding"
+          
+      - alert: InsufficientCheckpointReplicas
+        expr: kube_deployment_status_replicas_available{deployment="checkpoint-manager"} < 2
+        for: 5m
+        labels:
+          severity: warning
+          component: checkpoint
+        annotations:
+          summary: "Insufficient checkpoint replicas"
+          description: "Only {{ $value }} replicas available (minimum: 2)"

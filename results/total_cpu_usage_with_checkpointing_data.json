@@ -1,0 +1,23 @@
+{
+  "NoFailures": {
+    "Vanilla": 1300,
+    "AS": 3200,
+    "RR": 3700,
+    "CP (Basic)": 1500,
+    "Enhanced CP": 1550
+  },
+  "PodFailures": {
+    "Vanilla": 1300,
+    "AS": 3250,
+    "RR": 3750,
+    "CP (Basic)": 1520,
+    "Enhanced CP": 1560
+  },
+  "NodeFailure": {
+    "Vanilla": 1350,
+    "AS": 3400,
+    "RR": 3800,
+    "CP (Basic)": 1550,
+    "Enhanced CP": 1580
+  }
+}

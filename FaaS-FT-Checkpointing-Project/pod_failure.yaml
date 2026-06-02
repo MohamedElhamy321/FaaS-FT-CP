@@ -1,0 +1,13 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: fibonacci-pod-kill
+  namespace: fission
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    labelSelectors:
+      function: fibonacci
+  duration: "10s"
+

@@ -1,0 +1,60 @@
+import json
+import os
+from flask import request, current_app
+
+CHECKPOINT_FILE = "/tmp/fibonacci_checkpoint.json"
+
+def fib(n):
+    if n == 0:
+        return 0
+    elif n == 1:
+        return 1
+    else:
+        return fib(n-1) + fib(n-2)
+
+def load_checkpoint():
+    if os.path.exists(CHECKPOINT_FILE):
+        try:
+            with open(CHECKPOINT_FILE, "r") as f:
+                checkpoint_data = json.load(f)
+            current_app.logger.info(f"Loaded checkpoint: {checkpoint_data}")
+            return checkpoint_data.get("last_n", 0), checkpoint_data.get("sequence", [])
+        except json.JSONDecodeError:
+            current_app.logger.warning("Checkpoint file corrupted, starting from scratch.")
+            return 0, []
+    return 0, []
+
+def save_checkpoint(last_n, sequence):
+    with open(CHECKPOINT_FILE, "w") as f:
+        json.dump({"last_n": last_n, "sequence": sequence}, f)
+    current_app.logger.info(f"Saved checkpoint: last_n={last_n}, sequence_length={len(sequence)}")
+
+def main():
+    current_app.logger.info("HTTP Request received for Fibonacci function.")
+    n_target = int(request.get_data())
+
+    start_n, result_sequence = load_checkpoint()
+
+    # If resuming, ensure the sequence is consistent with start_n
+    if start_n > 0 and len(result_sequence) != start_n:
+        current_app.logger.warning("Inconsistent checkpoint data, recalculating sequence up to start_n.")
+        result_sequence = [str(fib(i)) for i in range(start_n)]
+
+    for i in range(start_n, n_target):
+        current_app.logger.info(f"Calculating fib({i})...")
+        result_sequence.append(str(fib(i)))
+        # Save checkpoint periodically, e.g., every 10 iterations or at significant steps
+        if (i + 1) % 10 == 0 or (i + 1) == n_target:
+            save_checkpoint(i + 1, result_sequence)
+
+    joined_result = ",".join(result_sequence)
+    current_app.logger.info("Fibonacci calculation complete.")
+    
+    # Clean up checkpoint file after successful completion
+    if os.path.exists(CHECKPOINT_FILE):
+        os.remove(CHECKPOINT_FILE)
+        current_app.logger.info("Checkpoint file removed after successful completion.")
+
+    return f'The Fibonacci sequence up to {n_target} is: {joined_result}'
+
+

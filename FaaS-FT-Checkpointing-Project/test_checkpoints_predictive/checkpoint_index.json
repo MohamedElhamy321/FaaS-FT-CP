@@ -1,0 +1,18 @@
+{
+  "index": {
+    "1": "./test_checkpoints_predictive\\checkpoint_1_full_1764273283.pkl"
+  },
+  "metadata": {
+    "1": {
+      "is_full": true,
+      "timestamp": 1764273283.1874125,
+      "base_checkpoint_id": null,
+      "size": 34,
+      "is_compressed": true,
+      "compression_algorithm": "none",
+      "original_size": 34,
+      "filepath": "./test_checkpoints_predictive\\checkpoint_1_full_1764273283.pkl"
+    }
+  },
+  "last_updated": 1764273283.1929424
+}

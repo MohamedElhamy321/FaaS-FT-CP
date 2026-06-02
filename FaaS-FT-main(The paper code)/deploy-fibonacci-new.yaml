@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fibonacci-backend
+  labels:
+    app: fibonacci-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fibonacci-backend
+  template:
+    metadata:
+      labels:
+        app: fibonacci-backend
+    spec:
+      containers:
+      - name: fibonacci
+        image: python:3.9-slim
+        workingDir: /app
+        command: ["/bin/bash"]
+        args: ["-c", "pip install flask && python -m flask run --host=0.0.0.0 --port=80"]
+        env:
+        - name: FLASK_APP
+          value: "app.py"
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: app-code
+          mountPath: /app
+      volumes:
+      - name: app-code
+        configMap:
+          name: fibonacci-code

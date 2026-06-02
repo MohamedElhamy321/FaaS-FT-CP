@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: checkpoint-manager
+  namespace: checkpoint-system
+  labels:
+    app: incremental-checkpoint
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: incremental-checkpoint
+      component: manager
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+    scheme: http

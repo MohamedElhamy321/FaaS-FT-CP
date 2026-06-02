@@ -1,0 +1,21 @@
+{
+  "creation": {
+    "total": 100,
+    "full_count": 10,
+    "incr_count": 90,
+    "avg_ms": 93.03001799882622,
+    "median_ms": 30.263900000136346,
+    "p95_ms": 146.31766001693904,
+    "p99_ms": 2193.7125400002697,
+    "min_ms": 21.056900004623458,
+    "max_ms": 2194.001500000013
+  },
+  "restoration": {},
+  "throughput": {
+    "duration_s": 10.331268787384033,
+    "count": 125,
+    "errors": 0,
+    "throughput": 12.099191548732426
+  },
+  "passed": false
+}

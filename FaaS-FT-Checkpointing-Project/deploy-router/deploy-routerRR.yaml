@@ -1,0 +1,42 @@
+---
+apiVersion:  v1
+kind: Service
+metadata:
+  name: routernew
+  labels:
+    svc: routernew
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8082
+  selector:
+      svc: routernew
+
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: routernew
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+       svc: routernew
+  template:
+    metadata:
+      labels:
+        svc: routernew
+    spec:
+      containers:
+      - name: routernew
+        image: cloudfaas/router-rr:1.10.0
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8082         
+      nodeSelector:
+        disktype: ssd
+

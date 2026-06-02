@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkpoint-manager
+  namespace: checkpoint-system
+  labels:
+    app: incremental-checkpoint
+    component: manager
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  selector:
+    app: incremental-checkpoint
+    component: manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkpoint-manager-metrics
+  namespace: checkpoint-system
+  labels:
+    app: incremental-checkpoint
+    component: manager
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  selector:
+    app: incremental-checkpoint
+    component: manager

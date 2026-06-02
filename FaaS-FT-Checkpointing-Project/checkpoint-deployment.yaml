@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkpoint-service
+  labels:
+    app: checkpoint-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: checkpoint-service
+  template:
+    metadata:
+      labels:
+        app: checkpoint-service
+    spec:
+      containers:
+      - name: checkpoint-service
+        image: checkpoint-service:2.5.0
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: CHECKPOINT_DIR
+          value: "/data/checkpoints"
+        - name: ENABLE_PREDICTIVE_SCHEDULING
+          value: "false"  # Set to "true" to enable predictive scheduling
+        - name: SCHEDULING_STRATEGY
+          value: "hybrid"  # Options: fixed_interval, load_based, predictive, adaptive, hybrid
+        volumeMounts:
+        - name: checkpoint-data
+          mountPath: /data/checkpoints
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+      volumes:
+      - name: checkpoint-data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkpoint-service
+  labels:
+    app: checkpoint-service
+spec:
+  selector:
+    app: checkpoint-service
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+  type: ClusterIP

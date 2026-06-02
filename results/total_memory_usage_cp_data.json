@@ -1,0 +1,62 @@
+{
+  "memory_usage_data": {
+    "NoFailures": {
+      "Vanilla": 14.04380455057855,
+      "AS": 18.971232863859658,
+      "RR": 21.085427613452495,
+      "CP": 17.867722059768035
+    },
+    "PodFailures": {
+      "Vanilla": 15.703867781268084,
+      "AS": 21.51438591606741,
+      "RR": 22.176963985801713,
+      "CP": 22.37450550563751
+    },
+    "NodeFailures": {
+      "Vanilla": 17.59329674746852,
+      "AS": 23.049417029152824,
+      "RR": 24.509482474264523,
+      "CP": 24.910207053452403
+    }
+  },
+  "techniques": {
+    "Vanilla": {
+      "color": "#90EE90",
+      "label": "Vanilla"
+    },
+    "AS": {
+      "color": "#FFD700",
+      "label": "AS"
+    },
+    "RR": {
+      "color": "#FF69B4",
+      "label": "RR"
+    },
+    "CP": {
+      "color": "#8A2BE2",
+      "label": "CP"
+    }
+  },
+  "scenarios": [
+    "NoFailures",
+    "PodFailures",
+    "NodeFailures"
+  ],
+  "benchmark_config": {
+    "total_requests": 60000,
+    "duration": 600,
+    "concurrent_users": 100,
+    "input_rate": 100
+  },
+  "metadata": {
+    "generated_at": "2025-11-10T18:02:49.819788",
+    "scenario": "total_memory_usage_with_cp",
+    "chart_type": "memory_usage_bar_chart",
+    "techniques": [
+      "Vanilla",
+      "AS",
+      "RR",
+      "CP"
+    ]
+  }
+}

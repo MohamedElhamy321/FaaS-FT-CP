@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: checkpoint-config
+  namespace: checkpoint-system
+data:
+  # Checkpoint configuration
+  checkpoint.yaml: |
+    # Incremental Checkpoint Configuration
+    storage:
+      checkpoint_dir: "/data/checkpoints"
+      max_checkpoints: 100
+      cleanup_policy: "KEEP_LAST_N"
+    
+    compression:
+      level: 6  # Balance between speed and size
+      parallel_enabled: true
+      parallel_threshold_kb: 100
+      max_workers: 4
+    
+    optimization:
+      enable_hash_optimization: true
+      hash_cache_size: 10000
+      enable_memory_optimization: true
+      memory_threshold_kb: 50
+    
+    checkpointing:
+      full_checkpoint_interval: 10
+      verify_checkpoints: true
+    
+    production:
+      enable_monitoring: true
+      enable_health_checks: true
+      enable_error_handling: true
+      enable_logging: true
+      max_retries: 3
+      
+    performance:
+      enable_xxhash: true  # Faster hashing if available
+      
+  # Logging configuration
+  logging.conf: |
+    [loggers]
+    keys=root,checkpoint
+    
+    [handlers]
+    keys=consoleHandler,fileHandler
+    
+    [formatters]
+    keys=detailed
+    
+    [logger_root]
+    level=INFO
+    handlers=consoleHandler
+    
+    [logger_checkpoint]
+    level=DEBUG
+    handlers=consoleHandler,fileHandler
+    qualname=incremental_checkpoint
+    propagate=0
+    
+    [handler_consoleHandler]
+    class=StreamHandler
+    level=INFO
+    formatter=detailed
+    args=(sys.stdout,)
+    
+    [handler_fileHandler]
+    class=FileHandler
+    level=DEBUG
+    formatter=detailed
+    args=('/var/log/checkpoint/checkpoint.log',)
+    
+    [formatter_detailed]
+    format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
+    datefmt=%Y-%m-%d %H:%M:%S

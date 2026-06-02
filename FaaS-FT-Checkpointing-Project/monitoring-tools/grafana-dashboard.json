@@ -1,0 +1,366 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "checkpoint-system",
+    "title": "Incremental Checkpoint System",
+    "tags": ["checkpoint", "performance", "monitoring"],
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Checkpoint Creation Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(checkpoint_creation_total{status=\"success\"}[5m])",
+            "legendFormat": "{{checkpoint_type}} - Success",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(checkpoint_creation_total{status=\"failure\"}[5m])",
+            "legendFormat": "{{checkpoint_type}} - Failure",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Checkpoints/sec"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "pointradius": 2,
+        "legend": {"show": true, "alignAsTable": true, "avg": true, "current": true, "max": true}
+      },
+      {
+        "id": 2,
+        "title": "Checkpoint Creation Duration",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(checkpoint_creation_duration_seconds_bucket[5m]))",
+            "legendFormat": "p50 - {{checkpoint_type}}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(checkpoint_creation_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95 - {{checkpoint_type}}",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(checkpoint_creation_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99 - {{checkpoint_type}}",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Duration"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 0,
+        "linewidth": 2,
+        "legend": {"show": true, "alignAsTable": true, "avg": true, "current": true, "max": true},
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [0.01], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["C", "5m", "now"]},
+              "reducer": {"params": [], "type": "avg"},
+              "type": "query"
+            }
+          ],
+          "name": "Slow Checkpoint Creation",
+          "message": "P99 checkpoint creation > 10ms"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Storage Usage",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "checkpoint_storage_used_bytes",
+            "legendFormat": "Total Storage",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "bytes", "label": "Storage"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 2,
+        "linewidth": 2,
+        "legend": {"show": true, "current": true}
+      },
+      {
+        "id": 4,
+        "title": "Checkpoint Count",
+        "type": "graph",
+        "gridPos": {"x": 8, "y": 8, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "checkpoint_count{checkpoint_type=\"FULL\"}",
+            "legendFormat": "Full Checkpoints",
+            "refId": "A"
+          },
+          {
+            "expr": "checkpoint_count{checkpoint_type=\"INCR\"}",
+            "legendFormat": "Incremental Checkpoints",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Count"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 0,
+        "linewidth": 2,
+        "legend": {"show": true, "current": true}
+      },
+      {
+        "id": 5,
+        "title": "Compression Ratio",
+        "type": "graph",
+        "gridPos": {"x": 16, "y": 8, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(checkpoint_compression_ratio_bucket[5m]))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(checkpoint_compression_ratio_bucket[5m]))",
+            "legendFormat": "p95",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "none", "label": "Ratio"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "legend": {"show": true, "alignAsTable": true, "avg": true, "current": true}
+      },
+      {
+        "id": 6,
+        "title": "Cache Hit Rate",
+        "type": "singlestat",
+        "gridPos": {"x": 0, "y": 16, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "rate(checkpoint_cache_hits_total[5m]) / (rate(checkpoint_cache_hits_total[5m]) + rate(checkpoint_cache_misses_total[5m])) * 100",
+            "refId": "A"
+          }
+        ],
+        "format": "percent",
+        "valueName": "current",
+        "valueFontSize": "80%",
+        "thresholds": "90,95",
+        "colors": ["#d44a3a", "#e0b400", "#299c46"],
+        "sparkline": {"show": true, "full": false, "lineColor": "rgb(31, 120, 193)"}
+      },
+      {
+        "id": 7,
+        "title": "Error Rate",
+        "type": "singlestat",
+        "gridPos": {"x": 6, "y": 16, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(rate(checkpoint_errors_total[5m]))",
+            "refId": "A"
+          }
+        ],
+        "format": "ops",
+        "valueName": "current",
+        "valueFontSize": "80%",
+        "thresholds": "0.01,0.05",
+        "colors": ["#299c46", "#e0b400", "#d44a3a"],
+        "sparkline": {"show": true, "full": false, "lineColor": "rgb(214, 74, 58)"}
+      },
+      {
+        "id": 8,
+        "title": "Health Status",
+        "type": "singlestat",
+        "gridPos": {"x": 12, "y": 16, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "checkpoint_health_status",
+            "refId": "A"
+          }
+        ],
+        "format": "none",
+        "valueName": "current",
+        "valueFontSize": "80%",
+        "valueMaps": [
+          {"value": "1", "text": "HEALTHY"},
+          {"value": "0", "text": "UNHEALTHY"}
+        ],
+        "thresholds": "0.5,1",
+        "colors": ["#d44a3a", "#e0b400", "#299c46"],
+        "colorValue": true
+      },
+      {
+        "id": 9,
+        "title": "Average Checkpoint Size",
+        "type": "singlestat",
+        "gridPos": {"x": 18, "y": 16, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "avg(checkpoint_size_bytes)",
+            "refId": "A"
+          }
+        ],
+        "format": "bytes",
+        "valueName": "current",
+        "valueFontSize": "80%",
+        "sparkline": {"show": true, "full": false}
+      },
+      {
+        "id": 10,
+        "title": "Errors by Type",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 20, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(checkpoint_errors_total[5m])",
+            "legendFormat": "{{error_type}} - {{operation}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Errors/sec"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "legend": {"show": true, "alignAsTable": true, "rightSide": false}
+      },
+      {
+        "id": 11,
+        "title": "Restoration Performance",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 20, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(checkpoint_restoration_duration_seconds_bucket[5m]))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(checkpoint_restoration_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(checkpoint_restoration_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Duration"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 0,
+        "linewidth": 2,
+        "legend": {"show": true, "alignAsTable": true, "avg": true, "current": true, "max": true}
+      },
+      {
+        "id": 12,
+        "title": "State Changes Detected",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 28, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(checkpoint_state_changes_detected_total[5m])",
+            "legendFormat": "Changes/sec",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Changes/sec"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 2,
+        "linewidth": 2,
+        "legend": {"show": true}
+      },
+      {
+        "id": 13,
+        "title": "Hash Calculation Duration",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 28, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(checkpoint_hash_calculation_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Duration"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "legend": {"show": true}
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "namespace",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(checkpoint_creation_total, namespace)",
+          "current": {"text": "checkpoint-system", "value": "checkpoint-system"},
+          "multi": false,
+          "includeAll": false
+        },
+        {
+          "name": "pod",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(checkpoint_creation_total{namespace=\"$namespace\"}, pod)",
+          "current": {},
+          "multi": true,
+          "includeAll": true
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "changes(checkpoint_health_status[5m]) > 0",
+          "name": "Health Status Changes",
+          "step": "60s",
+          "tagKeys": "status",
+          "textFormat": "Health status changed",
+          "titleFormat": "Health Alert"
+        }
+      ]
+    }
+  }
+}

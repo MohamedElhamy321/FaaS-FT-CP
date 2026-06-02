@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fibonacci-code
+data:
+  app.py: |
+    from flask import Flask, request
+    import logging
+
+    app = Flask(__name__)
+
+    def fib(n):
+        if n == 0:
+            return 0
+        elif n == 1:
+            return 1
+        else:
+            return fib(n-1) + fib(n-2)
+
+    @app.route('/fibonacci', methods=['POST'])
+    def handle_fibonacci():
+        try:
+            n = int(request.get_data())
+            result = []
+            for i in range(n):
+                result.append(str(fib(i)))
+            joined = ','.join(result)
+            return joined
+        except Exception as e:
+            app.logger.error(f"Error processing request: {str(e)}")
+            return str(e), 500
+
+    @app.route('/health', methods=['GET'])
+    def health_check():
+        return 'healthy', 200
+
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=80)
+  requirements.txt: |
+    flask==2.0.1
